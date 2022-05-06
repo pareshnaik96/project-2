@@ -1,9 +1,9 @@
 const collegeModel = require("../Models/collegeModel")
 const internModel = require('../Models/internModel')
-const ObjectId = require("mongoose").Types.ObjectId;
+// const ObjectId = require("mongoose").Types.ObjectId;
 
 
-let nameRegex = /^[A-Za-z]{2,}$/
+let nameRegex = /^[a-zA-Z ]{2,}$/
 let emailRegex = /^\w+([\.-]?\w+)@\w+([\.-]?\w+)(\.\w{2,3})+$/;
 let mobileRegex = /^(\+\d{1,3}[- ]?)?\d{10}$/;
 
@@ -29,7 +29,7 @@ const createIntern = async function (req, res) {
             if (!collegeName || !collegeName.trim()) {
                 return res.status(400).send({ status: false, msg: "Please Fill the required field college Name!" })
             }
-            
+
             // name validation
             if (!nameRegex.test(name)) {
                 return res.status(400).send({ status: false, msg: "Name must be alphabetical and min length 2." })
