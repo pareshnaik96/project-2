@@ -11,11 +11,11 @@ let mobileRegex = /^(\+\d{1,3}[- ]?)?\d{10}$/;
 
 const createIntern = async function (req, res) {
     try {
-        let data = req.body;
+        let reqBody = req.body;
 
-        if (Object.keys(data).length != 0) {
+        if (Object.keys(reqBody).length != 0) {
 
-            const { name, mobile, email, collegeId } = data
+            const { name, mobile, email, collegeName, isDeleted } = reqBody
 
             if (!name || !name.trim()) {
                 return res.status(400).send({ status: false, msg: "Please Fill the required field Name!" })
@@ -26,18 +26,10 @@ const createIntern = async function (req, res) {
             if (!email) {
                 return res.status(400).send({ status: false, msg: "Please enter the required field email" })
             }
-            if (!collegeId || !collegeId.trim()) {
-                return res.status(400).send({ status: false, msg: "Please Fill the required field college Id!" })
+            if (!collegeName || !collegeName.trim()) {
+                return res.status(400).send({ status: false, msg: "Please Fill the required field college Name!" })
             }
-            // Validation of ID format
-            if (!ObjectId.isValid(collegeId)) return res.status(400).send({ status: false, msg: "Not a valid college ID" })
-
-            // Validation of id exist or not
-            let id = req.body.collegeId
-            let findcollegeId = await collegeModel.findById(id)
-            if (!findcollegeId) {
-                return res.status(404).send({ status: false, msg: "College Id Not found. Please enter a valid college Id." })
-            }
+            
             // name validation
             if (!nameRegex.test(name)) {
                 return res.status(400).send({ status: false, msg: "Name must be alphabetical and min length 2." })
@@ -56,6 +48,23 @@ const createIntern = async function (req, res) {
                 return res.status(400).send({ status: false, msg: "Email Id already exists." })
             }
 
+            //  isDeleted Should be False       
+            if (isDeleted === true) {
+                return res.status(400).send({ status: false, msg: "New entries can't be deleted" });
+            }
+
+            // Check that College Exists or not 
+            let collegeData = await collegeModel.findOne({ name: collegeName })
+
+            if (!collegeData) {
+                return res.status(404).send({ status: false, msg: "No College found With This Name , Check Name And Try Again" })
+            }
+
+            const collegeId = collegeData._id;
+
+            // Finally the registration of intern is successful
+            let data = { isDeleted, name, mobile, email, collegeId }
+
             let saveData = await internModel.create(data);
             return res.status(201).send({ status: true, data: saveData });
         } else {
@@ -67,50 +76,7 @@ const createIntern = async function (req, res) {
         return res.status(500).send({ status: false, msg: err.message });
     }
 }
-//  GET college 
-
-const getCollegeDetails = async function (req, res) {
-    try {
-        let queryParams=req.query
-        const {collegeName}= req.query
-        if (!Object.keys(queryParams).length > 0) {
-            return res.status(400).send({ status: false, msg: "Invalid filters!!" })
-        }
-        if (!collegeName) {
-            return res.status(400).send({ status: false, msg: "Please Enter a college Name" })
-        }
-        if (collegeName !== collegeName.toLowerCase()) {
-            return res.status(400).send({ status: false, msg: "Invalid college Abbrivation" })
-        }
-        //college name must be a single word
-        if (collegeName.split(" ").length > 1) {
-            return res.status(400).send({ status: false, msg: "Please provide a valid Abbrivation" });
-        }
-        //check name is valid or not 
-        const college = await collegeModel.findOne({ name: collegeName })
-        if (!college) {
-            return res.status(404).send({ status: false, msg: "college not found,please check the college name" })
-        }
-        const collegeId = college._id
-        const InternsIncollege = await internModel.find({ collegeId: collegeId }).select({ _id:1, email:1, name:1, mobile:1 })
-        //destructuring of object
-        const { name, fullName, logoLink } = college;
-
-        const finalData = {
-            name: name,
-            fullName: fullName,
-            logoLink: logoLink,
-            interests: InternsIncollege.length ? InternsIncollege : { msg: "No-one is applied for the internship in this college" }
-        }
-        res.status(200).send({ status: true, msg: "college Details", Data: finalData })
-
-    } catch (err) {
-        console.log(err.message)
-        return res.status(500).send({ status: false, msg: err.message });
-    }
-}
 
 
 
 module.exports.createIntern = createIntern
-module.exports.getCollegeDetails = getCollegeDetails
